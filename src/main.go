@@ -44,13 +44,13 @@ func loadContainersConfig() {
 		log.Printf("Webhook available at: %s/hooks/%s", os.Getenv("BASE_URL"), name)
 	}
 }
-func onRequest(name string, sock *websocket.Conn) (int, string) {
+func onRequest(name string, token string, sock *websocket.Conn) (int, string) {
 	containerInfos := getContainerFromName(name)
 	if containerInfos == nil {
 		return 400, "Container not found"
 	}
 	log.Println("Request received for service:", name)
-	if err := client.NewRequest(containerInfos.Id, name, sock); err != nil {
+	if err := client.NewRequest(containerInfos.Id, name, token, sock); err != nil {
 		log.Println("Error updating container "+name, err)
 		return 500, "Failed to update container " + name
 	}

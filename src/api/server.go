@@ -16,7 +16,7 @@ type Server struct {
 	port       string
 	containers *[]docker.ContainerInfo
 }
-type RequestHandler func(name string, c *websocket.Conn) (int, string)
+type RequestHandler func(name string, token string, c *websocket.Conn) (int, string)
 
 func New(containers *[]docker.ContainerInfo, onRequest RequestHandler) *Server {
 	port := os.Getenv("PORT")

@@ -76,8 +76,8 @@ func (docker *DockerClient) GetContainersEnabled() []types.Container {
 }
 
 // Create a new request and build a new container agent that will handle update
-func (docker *DockerClient) NewRequest(containerId string, name string, sock *websocket.Conn) error {
-	containerAgent := NewContainerAgent(docker, containerId, name, sock)
+func (docker *DockerClient) NewRequest(containerId string, name string, token string, sock *websocket.Conn) error {
+	containerAgent := NewContainerAgent(docker, containerId, name, token, sock)
 	err := containerAgent.UpdateContainer()
 	if containerAgent.sock != nil {
 		containerAgent.sock.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(time.Second))

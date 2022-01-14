@@ -26,13 +26,14 @@ type ContainerAgent struct {
 	cli            *client.Client
 	containerId    string
 	name           string
+	token          string
 	containerInfos types.ContainerJSON
 	imageInfos     types.ImageInspect
 	ctx            context.Context
 	sock           *websocket.Conn
 }
 
-func NewContainerAgent(docker *DockerClient, containerId string, name string, sock *websocket.Conn) *ContainerAgent {
+func NewContainerAgent(docker *DockerClient, containerId string, name string, token string, sock *websocket.Conn) *ContainerAgent {
 	ctx := context.Background()
 	containerInfos, err := docker.cli.ContainerInspect(ctx, containerId)
 	imageInfos, _, err1 := docker.cli.ImageInspectWithRaw(ctx, containerInfos.Image)
@@ -49,6 +50,7 @@ func NewContainerAgent(docker *DockerClient, containerId string, name string, so
 		ctx:            ctx,
 		cli:            docker.cli,
 		sock:           sock,
+		token:          token,
 	}
 }
 
@@ -164,8 +166,10 @@ func (agent *ContainerAgent) buildDockerImage(repoLink string, dockerfile string
 		agent.print("Image already up to date, stopping process...")
 		return false, nil
 	}
+	//We replace the {{TOKEN}} by the token
+	remoteLink := regexp.MustCompile(`{{.+}}`).ReplaceAllString(repoLink, agent.token)
 	reader, err := agent.cli.ImageBuild(agent.ctx, nil, types.ImageBuildOptions{
-		RemoteContext: repoLink,
+		RemoteContext: remoteLink,
 		Dockerfile:    dockerfile,
 		NoCache:       true,
 		ForceRemove:   true,
