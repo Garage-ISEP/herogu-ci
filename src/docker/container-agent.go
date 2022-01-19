@@ -80,7 +80,7 @@ func (agent *ContainerAgent) UpdateContainer() (err error) {
 	if agent.isLocalImage() {
 		agent.print("Container is local image")
 		agent.emit(Build, nil)
-		context := agent.imageInfos.Config.Labels["dockerfile"]
+		context := agent.getLabel("context")
 		if context == "" {
 			context = "."
 		}
@@ -158,16 +158,20 @@ func (agent *ContainerAgent) buildDockerImage(repoLink string, dockerfile string
 			err = errors.New(r.(string))
 		}
 	}()
-	lastCommitSha, err := agent.getLastCommitSha(repoLink)
+	//We replace the {{TOKEN}} by the token
+	reg, err := regexp.Compile(`{{.+}}`)
 	if err != nil {
-		panic("Error while getting last commit sha: " + err.Error())
+		agent.panic("Error while compiling regexp:", err.Error())
+	}
+	remoteLink := reg.ReplaceAllString(repoLink, agent.token)
+	lastCommitSha, err := agent.getLastCommitSha(remoteLink)
+	if err != nil {
+		agent.panic("Error while getting last commit sha: ", err)
 	}
 	if previousSha == lastCommitSha {
 		agent.print("Image already up to date, stopping process...")
 		return false, nil
 	}
-	//We replace the {{TOKEN}} by the token
-	remoteLink := regexp.MustCompile(`{{.+}}`).ReplaceAllString(repoLink, agent.token)
 	reader, err := agent.cli.ImageBuild(agent.ctx, nil, types.ImageBuildOptions{
 		RemoteContext: remoteLink,
 		Dockerfile:    dockerfile,
@@ -274,6 +278,7 @@ func (agent *ContainerAgent) getLastCommitSha(remote string) (string, error) {
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	sha := strings.Split(regexp.MustCompile(`[0-9a-f]{5,50} refs/heads/`+branch).FindString(string(body)), " ")[0]
+	sha = sha[len(sha)-40:]
 	if err != nil {
 		return "", err
 	}

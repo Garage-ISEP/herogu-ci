@@ -51,7 +51,7 @@ func onRequest(name string, token string, sock *websocket.Conn) (int, string) {
 	}
 	log.Println("Request received for service:", name)
 	if err := client.NewRequest(containerInfos.Id, name, token, sock); err != nil {
-		log.Println("Error updating container "+name, err)
+		log.Println("Error updating container "+name, err.Error())
 		return 500, "Failed to update container " + name
 	}
 	log.Printf("Container %s successfully updated", name)
